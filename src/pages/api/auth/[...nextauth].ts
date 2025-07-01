@@ -1,9 +1,13 @@
-import NextAuth from "next-auth"
+import NextAuth, { NextAuthOptions } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import connectDB from "@/lib/mongodb"
 import User from "@/models/User"
+import { logAuthError, logAuthSuccess, checkEnvVars } from "@/lib/auth-debug"
 
-const handler = NextAuth({
+// Check environment variables on startup
+checkEnvVars()
+
+export const authOptions: NextAuthOptions = {
     providers: [
         GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -11,10 +15,16 @@ const handler = NextAuth({
         })
     ],
     callbacks: {
-        async signIn({ user, account, profile }) {
+        async signIn({ user, account }) {
             if (account?.provider === "google") {
                 try {
                     await connectDB()
+
+                    logAuthSuccess("signIn callback", {
+                        userEmail: user.email,
+                        provider: account?.provider,
+                        accountId: account?.providerAccountId
+                    })
 
                     // Check if user exists in our User model
                     let existingUser = await User.findOne({ email: user.email })
@@ -30,17 +40,21 @@ const handler = NextAuth({
                             },
                             profileCompleted: false
                         })
+
+                        logAuthSuccess("Creating new user", {
+                            email: user.email
+                        })
                     }
 
                     return true
                 } catch (error) {
-                    console.error("Error during sign in:", error)
+                    logAuthError(error, "signIn callback")
                     return false
                 }
             }
             return true
         },
-        async jwt({ token, user, account }) {
+        async jwt({ token, user }) {
             // Persist user info in the token
             if (user) {
                 try {
@@ -52,7 +66,7 @@ const handler = NextAuth({
                         token.profileCompleted = dbUser.profileCompleted
                     }
                 } catch (error) {
-                    console.error("Error in JWT callback:", error)
+                    logAuthError(error, "JWT callback")
                 }
             }
             return token
@@ -63,17 +77,37 @@ const handler = NextAuth({
                 session.user.id = token.id as string
                 session.user.profileCompleted =
                     token.profileCompleted as boolean
+
+                logAuthSuccess("session callback", {
+                    userId: session.user.id,
+                    profileCompleted: session.user.profileCompleted
+                })
             }
             return session
         }
     },
+    events: {
+        async signIn(message) {
+            logAuthSuccess("signIn event", message)
+        },
+        async signOut(message) {
+            logAuthSuccess("signOut event", message)
+        },
+        async createUser(message) {
+            logAuthSuccess("createUser event", message)
+        },
+        async linkAccount(message) {
+            logAuthSuccess("linkAccount event", message)
+        }
+    },
     pages: {
-        signIn: "/auth/signin"
+        signIn: "/auth/signin",
+        error: "/auth/error"
     },
     session: {
         strategy: "jwt"
     },
     debug: process.env.NODE_ENV === "development"
-})
+}
 
-export { handler as GET, handler as POST }
+export default NextAuth(authOptions)
