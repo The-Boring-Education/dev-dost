@@ -1,7 +1,7 @@
 "use client";
 
 import { signIn, getSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Heart, ArrowLeft } from "lucide-react";

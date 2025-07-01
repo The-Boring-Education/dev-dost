@@ -1,19 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth";
 import connectDB from "@/lib/mongodb";
 import Project from "@/models/Project";
 import ProjectInterest from "@/models/ProjectInterest";
 import User from "@/models/User";
+import { authOptions } from "../auth/[...nextauth]";
 
-export async function GET(request: NextRequest) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(req, res, authOptions);
     
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
     await connectDB();
@@ -21,10 +23,7 @@ export async function GET(request: NextRequest) {
     // Get current user
     const user = await User.findOne({ email: session.user.email });
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      return res.status(404).json({ error: "User not found" });
     }
 
     // Get project IDs that user has already swiped on
@@ -42,16 +41,13 @@ export async function GET(request: NextRequest) {
     .sort({ createdAt: -1 }) // Newest first
     .limit(50); // Limit to prevent performance issues
 
-    return NextResponse.json({
+    return res.status(200).json({
       projects,
       count: projects.length,
     });
 
   } catch (error) {
     console.error("Error fetching projects for user:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return res.status(500).json({ error: "Internal server error" });
   }
 }

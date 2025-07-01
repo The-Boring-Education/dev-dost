@@ -1,13 +1,11 @@
-"use client";
-
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/router";
 import { useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Heart, Code, Users, Zap, ArrowRight, Github, Star } from "lucide-react";
+import { Heart, Code, Users, Zap, ArrowRight, Github } from "lucide-react";
 
 export default function HomePage() {
   const { data: session, status } = useSession();
@@ -93,7 +91,7 @@ export default function HomePage() {
                   className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed"
                 >
                   Swipe right on projects, connect with developers across cities, and build amazing things together. 
-                  <strong className="text-white"> It's Tinder for Builders! 🚀</strong>
+                  <strong className="text-white"> It&apos;s Tinder for Builders! 🚀</strong>
                 </motion.p>
               </motion.div>
 

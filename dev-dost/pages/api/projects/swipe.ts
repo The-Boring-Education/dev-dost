@@ -1,29 +1,28 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth";
 import connectDB from "@/lib/mongodb";
 import Project from "@/models/Project";
 import ProjectInterest from "@/models/ProjectInterest";
 import Match from "@/models/Match";
 import User from "@/models/User";
+import { authOptions } from "../auth/[...nextauth]";
 
-export async function POST(request: NextRequest) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(req, res, authOptions);
     
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const { projectId, interested } = await request.json();
+    const { projectId, interested } = req.body;
 
     if (!projectId) {
-      return NextResponse.json(
-        { error: "Project ID is required" },
-        { status: 400 }
-      );
+      return res.status(400).json({ error: "Project ID is required" });
     }
 
     await connectDB();
@@ -31,19 +30,13 @@ export async function POST(request: NextRequest) {
     // Get current user
     const user = await User.findOne({ email: session.user.email });
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      return res.status(404).json({ error: "User not found" });
     }
 
     // Verify project exists
     const project = await Project.findById(projectId);
     if (!project) {
-      return NextResponse.json(
-        { error: "Project not found" },
-        { status: 404 }
-      );
+      return res.status(404).json({ error: "Project not found" });
     }
 
     // Record the user's interest (or lack thereof)
@@ -111,7 +104,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    return res.status(200).json({
       success: true,
       match: matchData,
       message: interested ? "Interest recorded!" : "Marked as not interested",
@@ -119,9 +112,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error("Error handling swipe:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return res.status(500).json({ error: "Internal server error" });
   }
 }
