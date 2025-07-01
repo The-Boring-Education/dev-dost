@@ -8,7 +8,9 @@
         "start": "next start",
         "lint": "next lint",
         "setup": "node scripts/setup.js",
-        "seed": "curl -X POST http://localhost:3000/api/seed"
+        "seed": "curl -X POST http://localhost:3000/api/seed",
+        "fix-auth": "node scripts/fix-auth.js",
+        "test-auth": "curl -I http://localhost:3000/api/auth/session"
     },
     "dependencies": {
         "@next-auth/mongodb-adapter": "^1.1.3",
