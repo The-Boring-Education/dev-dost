@@ -26,6 +26,18 @@ export interface IProject extends Document {
     image?: string
     githubRepo?: string
     liveDemo?: string
+
+    // New fields for user-created projects
+    teamSize: number // How many people needed for the project
+    lookingFor: string[] // What kind of developers/skills they're looking for
+    communicationPreference: string // Email, Discord, Slack, etc.
+    timezone: string // User's timezone for coordination
+    commitmentLevel: string // Full-time, Part-time, Weekend, etc.
+    status: "draft" | "active" | "in-progress" | "completed" | "archived"
+    viewCount: number // How many times the project has been viewed
+    interestCount: number // How many people swiped right
+    matchCount: number // How many matches this project has generated
+
     createdAt: Date
     updatedAt: Date
 }
@@ -117,6 +129,49 @@ const ProjectSchema = new Schema<IProject>(
         liveDemo: {
             type: String,
             default: ""
+        },
+        teamSize: {
+            type: Number,
+            default: 2,
+            min: 1,
+            max: 10
+        },
+        lookingFor: [
+            {
+                type: String,
+                trim: true
+            }
+        ],
+        communicationPreference: {
+            type: String,
+            default: "Email",
+            enum: ["Email", "Discord", "Slack", "Telegram", "WhatsApp", "Other"]
+        },
+        timezone: {
+            type: String,
+            default: "UTC"
+        },
+        commitmentLevel: {
+            type: String,
+            default: "Part-time",
+            enum: ["Full-time", "Part-time", "Weekend", "Flexible"]
+        },
+        status: {
+            type: String,
+            default: "active",
+            enum: ["draft", "active", "in-progress", "completed", "archived"]
+        },
+        viewCount: {
+            type: Number,
+            default: 0
+        },
+        interestCount: {
+            type: Number,
+            default: 0
+        },
+        matchCount: {
+            type: Number,
+            default: 0
         }
     },
     {
@@ -131,6 +186,13 @@ ProjectSchema.index({ isActive: 1 })
 ProjectSchema.index({ isPredefined: 1 })
 ProjectSchema.index({ techStack: 1 })
 ProjectSchema.index({ createdBy: 1 })
+ProjectSchema.index({ status: 1 })
+ProjectSchema.index({ viewCount: -1 })
+ProjectSchema.index({ interestCount: -1 })
+ProjectSchema.index({ matchCount: -1 })
+ProjectSchema.index({ createdAt: -1 })
+ProjectSchema.index({ teamSize: 1 })
+ProjectSchema.index({ commitmentLevel: 1 })
 
 const Project =
     mongoose.models.Project ||
